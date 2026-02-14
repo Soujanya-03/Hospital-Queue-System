@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hospital Queue System</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0a195b 0%, #0a0312 100%);
+      color: #333;
+      min-height: 100vh;
+    }
+    header {
+      background: linear-gradient(135deg, #2837bf 0%, #2e34b4 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(27, 16, 16, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="none" width="100" height="100"/><path d="M0,0 L100,100 M100,0 L0,100" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></svg>');
+      z-index: 1;
+    }
+    header h1 {
+      position: relative;
+      z-index: 2;
+      font-size: 2.5rem;
+      margin-bottom: 5px;
+    }
+    header p {
+      position: relative;
+      z-index: 2;
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 0 15px;
+    }
+    .tabs {
+      display: flex;
+      margin-bottom: 25px;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 15px 20px;
+      background: white;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #555;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .tab-btn:hover {
+      background: #f8f9fa;
+    }
+    .tab-btn.active {
+      background: #2d3894;
+      color: white;
+    }
+    .tab-btn i {
+      margin-right: 8px;
+    }
+    .section {
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
+    .section.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+    .card h2 {
+      margin-bottom: 20px;
+      color: #5a67d8;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+    }
+    .card h2 i {
+      margin-right: 10px;
+    }
+    .my-token-card {
+      background: linear-gradient(135deg, #172493 0%, #4c51bf 100%);
+      color: white;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .my-token-card::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+      z-index: 1;
+    }
+    .my-token-card > * {
+      position: relative;
+      z-index: 2;
+    }
+    .token-number {
+      font-size: 60px;
+      font-weight: bold;
+      margin: 20px 0;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .queue-item {
+      display: flex;
+      align-items: center;
+      padding: 15px;
+      margin: 10px 0;
+      background: #f9f9f9;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+      border-left: 4px solid transparent;
+    }
+    .queue-item:hover {
+      background: #f0f0f0;
+      transform: translateX(5px);
+    }
+    .queue-item.called {
+      border-left-color: #3182ce;
+      background: #e6f3ff;
+    }
+    .queue-item.serving {
+      border-left-color: #0e7e42;
+      background: #e6fffa;
+    }
+    .queue-item.completed {
+      opacity: 0.7;
+      border-left-color: #718096;
+    }
+    .queue-number {
+      font-size: 24px;
+      font-weight: bold;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-right: 15px;
+    }
+    .queue-info {
+      flex: 1;
+    }
+    .queue-info div {
+      margin-bottom: 5px;
+    }
+    .queue-status {
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      min-width: 100px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .status-waiting {
+      background: #fef5e7;
+      color: #b77306;
+    }
+    .status-called {
+      background: #e6f3ff;
+      color: #c47ff2;
+    }
+    .status-serving {
+      background: #e6fffa;
+      color: #148147;
+    }
+    .status-completed {
+      background: #f7fafc;
+      color: #a6b9cd;
+    }
+    .admin-controls {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .btn i {
+      margin-right: 8px;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #5a67d8 0%, #4c51bf 100%);
+      color: white;
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+      color: white;
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+      color: white;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #5a67d8 0%, #4c51bf 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(90, 103, 216, 0.3);
+      transition: transform 0.3s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+    .stat-value {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      display: none;
+      max-width: 300px;
+      z-index: 1000;
+      border-left: 4px solid #5a67d8;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+    .notification.show {
+      display: block;
+    }
+    .notification-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #5a67d8;
+    }
+    .display-card {
+      background: linear-gradient(135deg, #5a67d8 0%, #4c51bf 100%);
+      color: white;
+      text-align: center;
+      padding: 40px;
+      border-radius: 15px;
+      margin-bottom: 25px;
+      box-shadow: 0 8px 25px rgba(90, 103, 216, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .display-card::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+      z-index: 1;
+    }
+    .display-card > * {
+      position: relative;
+      z-index: 2;
+    }
+    .display-card h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+    }
+    .display-token {
+      font-size: 80px;
+      font-weight: bold;
+      margin: 20px 0;
+      letter-spacing: 5px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    .current-serving {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .current-serving i {
+      font-size: 1.5rem;
+      margin-right: 10px;
+      animation: blink 1.5s infinite;
+    }
+    @keyframes blink {
+      0% { opacity: 1; }
+      50% { opacity: 0.3; }
+      100% { opacity: 1; }
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #718096;
+    }
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 15px;
+      opacity: 0.5;
+    }
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .admin-controls {
+        flex-direction: column;
+      }
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+      .display-token {
+        font-size: 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><i class="fas fa-hospital"></i> Hospital Queue System</h1>
+    <p>Efficient patient management and service</p>
+  </header>
+  <div class="notification" id="notification">
+    <div class="notification-title" id="notificationTitle"></div>
+    <div id="notificationMessage"></div>
+  </div>
+  <div class="container">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('patient')">
+        <i class="fas fa-user"></i> Patient View
+      </button>
+      <button class="tab-btn" onclick="switchTab('admin')">
+        <i class="fas fa-user-shield"></i> Admin Dashboard
+      </button>
+      <button class="tab-btn" onclick="switchTab('display')">
+        <i class="fas fa-tv"></i> Display Screen
+      </button>
+    </div>
+    <div id="patientSection" class="section active">
+      <div class="card my-token-card" id="myTokenCard" style="display: none;">
+        <h2><i class="fas fa-ticket-alt"></i> Your Token</h2>
+        <div class="token-number" id="myTokenNumber">--</div>
+        <div class="queue-status" id="myTokenStatus">Waiting</div>
+        <div id="estimatedWait">Estimated wait: -- minutes</div>
+      </div>
+      <div class="card">
+        <h2><i class="fas fa-plus-circle"></i> Get Your Token</h2>
+        <p>Click below to join the queue</p>
+        <button class="btn btn-primary" onclick="generateToken()">
+          <i class="fas fa-plus"></i> Generate New Token
+        </button>
+      </div>
+      <div class="card">
+        <h2><i class="fas fa-list-ol"></i> Current Queue Status</h2>
+        <div id="patientQueue"></div>
+      </div>
+    </div>
+    <div id="adminSection" class="section">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="totalTokens">0</div>
+          <div><i class="fas fa-users"></i> Total Tokens</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="waitingTokens">0</div>
+          <div><i class="fas fa-clock"></i> Waiting</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="servingToken">--</div>
+          <div><i class="fas fa-user-check"></i> Now Serving</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="completedTokens">0</div>
+          <div><i class="fas fa-check-circle"></i> Completed</div>
+        </div>
+      </div>
+      <div class="card">
+        <h2><i class="fas fa-cogs"></i> Queue Control</h2>
+        <div class="admin-controls">
+          <button class="btn btn-success" id="callNextBtn" onclick="callNextToken()">
+            <i class="fas fa-bullhorn"></i> Call Next
+          </button>
+          <button class="btn btn-primary" id="startServingBtn" onclick="startServing()" disabled>
+            <i class="fas fa-play"></i> Start Serving
+          </button>
+          <button class="btn btn-success" id="completeBtn" onclick="completeToken()" disabled>
+            <i class="fas fa-check"></i> Complete
+          </button>
+          <button class="btn btn-danger" onclick="resetQueue()">
+            <i class="fas fa-redo"></i> Reset Queue
+          </button>
+        </div>
+      </div>
+      <div class="card">
+        <h2><i class="fas fa-list"></i> All Tokens</h2>
+        <div id="adminQueue"></div>
+      </div>
+    </div>
+    <div id="displaySection" class="section">
+      <div class="display-card">
+        <h1><i class="fas fa-bullhorn"></i> Now Serving</h1>
+        <div class="display-token pulse" id="displayToken">--</div>
+        <div class="queue-status" id="displayStatus">Please Wait</div>
+        <div class="current-serving">
+          <i class="fas fa-volume-up"></i>
+          <span>Please proceed to the counter</span>
+        </div>
+      </div>
+      <div class="card">
+        <h2><i class="fas fa-list-ol"></i> Queue Status</h2>
+        <div id="displayQueue"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    let queue = [];
+    let currentToken = null;
+    let myToken = null;
+    let tokenCounter = 100;
+    function initializeDemo() {
+      for (let i = 0; i < 3; i++) {
+        queue.push({
+          number: tokenCounter++,
+          status: 'waiting',
+          timestamp: Date.now() - (i * 60000)
+        });
+      }
+      updateAllViews();
+    }
+    function generateToken() {
+      const token = {
+        number: tokenCounter++,
+        status: 'waiting',
+        timestamp: Date.now()
+      };
+      queue.push(token);
+      myToken = token;
+      document.getElementById('myTokenCard').style.display = 'block';
+      updateAllViews();
+      showNotification('Token Generated', `Your token number is ${token.number}`);
+    }
+    function callNextToken() {
+      const waitingTokens = queue.filter(t => t.status === 'waiting');
+      if (waitingTokens.length === 0) {
+        showNotification('No Tokens', 'No tokens waiting in queue');
+        return;
+      }
+      const nextToken = waitingTokens[0];
+      const alreadyCalled = queue.find(t => t.status === 'called');
+      if (alreadyCalled) {
+        showNotification('Token Already Called', `Token ${alreadyCalled.number} is already called. Please start serving first.`);
+        return;
+      }
+      nextToken.status = 'called';
+      currentToken = nextToken;
+      updateAllViews();
+      updateButtonStates();
+      showNotification('Token Called', `Now calling token ${nextToken.number}`);
+    }
+    function startServing() {
+      const calledToken = queue.find(t => t.status === 'called');
+      if (!calledToken) {
+        showNotification('Error', 'No token is currently called');
+        return;
+      }
+      calledToken.status = 'serving';
+      currentToken = calledToken;
+      updateAllViews();
+      updateButtonStates();
+      showNotification('Service Started', `Now serving token ${currentToken.number}`);
+    }
+    function completeToken() {
+      const servingToken = queue.find(t => t.status === 'serving');
+      
+      if (!servingToken) {
+        showNotification('Error', 'No token is currently being served');
+        return;
+      }
+      servingToken.status = 'completed';
+      currentToken = null;
+      updateAllViews();
+      updateButtonStates();
+      showNotification('Service Completed', `Token ${servingToken.number} has been completed`);
+    }
+    function updateButtonStates() {
+      const callNextBtn = document.getElementById('callNextBtn');
+      const startServingBtn = document.getElementById('startServingBtn');
+      const completeBtn = document.getElementById('completeBtn');
+      const hasWaiting = queue.some(t => t.status === 'waiting');
+      const hasCalled = queue.some(t => t.status === 'called');
+      const hasServing = queue.some(t => t.status === 'serving');
+      callNextBtn.disabled = !hasWaiting || hasCalled;
+      startServingBtn.disabled = !hasCalled;
+      completeBtn.disabled = !hasServing;
+    }
+    function resetQueue() {
+      if (confirm('Are you sure you want to reset the entire queue?')) {
+        queue = [];
+        currentToken = null;
+        myToken = null;
+        tokenCounter = 100;
+        document.getElementById('myTokenCard').style.display = 'none';
+        updateAllViews();
+        updateButtonStates();
+        showNotification('Queue Reset', 'The queue has been reset');
+      }
+    }
+    function updateAllViews() {
+      updatePatientView();
+      updateAdminView();
+      updateDisplayView();
+      updateStats();
+    }
+    function updatePatientView() {
+      const patientQueue = document.getElementById('patientQueue');
+      const waitingTokens = queue.filter(t => t.status !== 'completed');
+      
+      if (myToken) {
+        document.getElementById('myTokenNumber').textContent = myToken.number;
+        document.getElementById('myTokenStatus').textContent = myToken.status.charAt(0).toUpperCase() + myToken.status.slice(1);
+        
+        const position = waitingTokens.findIndex(t => t.number === myToken.number) + 1;
+        const estimatedMinutes = position * 5;
+        document.getElementById('estimatedWait').textContent = `Estimated wait: ${estimatedMinutes} minutes`;
+      }
+      
+      if (waitingTokens.length === 0) {
+        patientQueue.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No tokens in the queue</p>
+          </div>
+        `;
+      } else {
+        patientQueue.innerHTML = waitingTokens.slice(0, 5).map(token => {
+          const position = waitingTokens.findIndex(t => t.number === token.number) + 1;
+          return `
+            <div class="queue-item ${token.status}">
+              <div class="queue-number">${token.number}</div>
+              <div class="queue-info">
+                <div>Position: ${position}</div>
+                <div>Est. wait: ${position * 5} min</div>
+              </div>
+              <div class="queue-status status-${token.status}">${token.status}</div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+    function updateAdminView() {
+      const adminQueue = document.getElementById('adminQueue');
+      
+      if (queue.length === 0) {
+        adminQueue.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No tokens in the queue</p>
+          </div>
+        `;
+      } else {
+        adminQueue.innerHTML = queue.map(token => `
+          <div class="queue-item ${token.status} ${token.status === 'completed' ? 'completed' : ''}">
+            <div class="queue-number">${token.number}</div>
+            <div class="queue-info">
+              <div>Token #${token.number}</div>
+              <div>Added: ${new Date(token.timestamp).toLocaleTimeString()}</div>
+            </div>
+            <div class="queue-status status-${token.status}">${token.status}</div>
+          </div>
+        `).join('');
+      }
+    }
+    function updateDisplayView() {
+      const displayToken = document.getElementById('displayToken');
+      const displayStatus = document.getElementById('displayStatus');
+      const displayQueue = document.getElementById('displayQueue');
+      const activeToken = queue.find(t => t.status === 'called' || t.status === 'serving');
+      if (activeToken) {
+        displayToken.textContent = activeToken.number;
+        displayStatus.textContent = activeToken.status.charAt(0).toUpperCase() + activeToken.status.slice(1);
+        displayStatus.className = `queue-status status-${activeToken.status}`;
+      } else {
+        displayToken.textContent = '--';
+        displayStatus.textContent = 'Please Wait';
+        displayStatus.className = 'queue-status';
+      }
+      const nextTokens = queue.filter(t => t.status === 'waiting').slice(0, 5);
+      if (nextTokens.length === 0) {
+        displayQueue.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No tokens waiting in queue</p>
+          </div>
+        `;
+      } else {
+        displayQueue.innerHTML = nextTokens.map((token, index) => `
+          <div class="queue-item waiting">
+            <div class="queue-number">${token.number}</div>
+            <div class="queue-info">
+              <div>Next in queue</div>
+            </div>
+            <div class="queue-status status-waiting">Waiting</div>
+          </div>
+        `).join('');
+      }
+    }
+    function updateStats() {
+      const total = queue.length;
+      const waiting = queue.filter(t => t.status === 'waiting').length;
+      const serving = queue.find(t => t.status === 'serving');
+      const completed = queue.filter(t => t.status === 'completed').length;
+      document.getElementById('totalTokens').textContent = total;
+      document.getElementById('waitingTokens').textContent = waiting;
+      document.getElementById('servingToken').textContent = serving ? serving.number : '--';
+      document.getElementById('completedTokens').textContent = completed;
+    }
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+      document.getElementById(`${tab}Section`).classList.add('active');
+    }
+    function showNotification(title, message) {
+      const notification = document.getElementById('notification');
+      document.getElementById('notificationTitle').textContent = title;
+      document.getElementById('notificationMessage').textContent = message;
+      
+      notification.classList.add('show');
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
+    }
+    initializeDemo();
+    updateButtonStates();
+  </script>
+</body>
+</html>
